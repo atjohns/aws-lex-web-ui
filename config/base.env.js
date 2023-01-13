@@ -55,6 +55,7 @@ module.exports = {
     forceLogin: (process.env.FORCE_LOGIN === undefined) ? undefined : (process.env.FORCE_LOGIN === 'true') ? true : false,
     AllowSuperDangerousHTMLInMessage: (process.env.ENABLE_MARKDOWN_SUPPORT === undefined) ? undefined : (process.env.ENABLE_MARKDOWN_SUPPORT === 'true') ? true : false,
     shouldDisplayResponseCardTitle: (process.env.SHOW_RESPONSE_CARD_TITLE === undefined) ? undefined : (process.env.SHOW_RESPONSE_CARD_TITLE === 'true') ? true : false,
+    enableUpload: (process.env.ENABLE_UPLOAD === undefined) ? undefined : (process.env.ENABLE_UPLOAD === 'true') ? true : false,
     saveHistory:
       process.env.SAVE_HISTORY === undefined
         ? undefined

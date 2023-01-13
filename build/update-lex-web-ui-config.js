@@ -129,6 +129,7 @@ const lexV2BotLocaleVoices = {
   'PARENT_ORIGIN',
   'ENABLE_LOGIN',
   'ENABLE_LIVE_CHAT',
+  'ENABLE_UPLOAD',
   'FORCE_LOGIN',
   'POOL_ID',
   'APP_USER_POOL_CLIENT_ID',

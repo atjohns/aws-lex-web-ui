@@ -176,6 +176,12 @@ Parameters:
         S3 object zip file containing Lambda custom resource functions
       Default: artifacts/aws-lex-web-ui/artifacts/initiate-chat-lambda.zip
 
+    GetSignedUrlLambdaCodeObject:
+      Type: String
+      Description: >
+        S3 object zip file containing Lambda custom resource functions
+      Default: artifacts/aws-lex-web-ui/artifacts/get-signed-url-lambda.zip
+      
     WebAppConfNegativeFeedback:
         Type: String
         Default: Thumbs down
@@ -210,6 +216,16 @@ Parameters:
         This is an optional parameter, if set to True, the AWS Connect live Chat functionality will be available.
         A item to start a live chat will appear at the menu.
 
+    ShouldEnableUpload:
+        Type: String
+        Default: false
+        AllowedValues:
+          - true
+          - false
+        Description: >
+          This is an optional parameter, if set to True, the Lex Web UI will be able to accept uploaded files.
+          Please refer to documentation on creating an upload response.
+          
     ConnectContactFlowId:
       Type: String
       Description: >

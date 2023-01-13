@@ -87,6 +87,21 @@
         >
           <v-icon medium>call_end</v-icon>
         </v-btn>
+        <v-btn
+          v-if="isUploadEnabled"
+          class="icon-color input-button"
+          ref="uploadFile"
+          icon
+          v-on:click="onPickFile"
+        >
+          <v-icon medium>attach_file</v-icon>          
+        </v-btn>
+        <!-- Hidden -->
+        <input
+            type="file"
+            style="display: none"
+            ref="fileInput"
+            @change="onFilePicked">
       </v-toolbar>
     </v-layout>
   </div>
@@ -165,6 +180,9 @@ export default {
     },
     isModeLiveChat() {
       return this.$store.state.chatMode === 'livechat';
+    },
+    isUploadEnabled() {
+      return this.$store.state.config.ui.enableUpload;
     },
     micButtonIcon() {
       if (this.isMicMuted) {
@@ -302,6 +320,31 @@ export default {
             `${errorMessage}`,
           );
         });
+    },
+    onPickFile () {
+      this.$refs.fileInput.click()
+    },
+    onFilePicked (event) {
+      const files = event.target.files
+      if (files[0] !== undefined) {
+        this.fileName = files[0].name
+        // Check validity of file
+        if (this.fileName.lastIndexOf('.') <= 0) {
+          return
+        }
+        // If valid, continue
+        const fr = new FileReader()
+        fr.readAsDataURL(files[0])
+        fr.addEventListener('load', () => {
+          this.url = fr.result
+          this.fileObject = files[0] // this is an file that can be sent to server...
+          return this.$store.dispatch('getSignedUrl', this.fileObject)
+        })
+      } else {
+        this.fileName = ''
+        this.fileObject = null
+        this.url = ''
+      }
     },
     /**
      * Set auto-play attribute on audio element

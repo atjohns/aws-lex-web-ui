@@ -22,7 +22,7 @@ VPATH := $(OUT)
 # upload files to bootstrap bucket
 # NOTE: files uploaded with public read permissions
 upload: upload-templates upload-custom-resources-zip upload-src-zip \
-	upload-response-card-image upload-initiate-chat-lambda
+	upload-response-card-image upload-initiate-chat-lambda upload-get-signed-url-lambda
 .PHONY: upload
 
 # create the output directory for tracking dependencies
@@ -81,6 +81,24 @@ upload-initiate-chat-lambda:
 		@echo "[INFO] uploading initiate chat lambda"
 	aws s3 cp --acl public-read \
 			"$(OUT)/$(INITIATE_CHAT_LAMBDA_ZIP)" "s3://$(BOOTSTRAP_BUCKET_PATH)/$(INITIATE_CHAT_LAMBDA_ZIP)" \
+			| tee -a "$(OUT)/$(@)"
+
+# get signed url lambda function
+
+GET_SIGNED_URL_LAMBDA_DIR := $(SOURCE_DIR)/get-signed-url-lambda
+GET_SIGNED_URL_LAMBDA_ZIP := get-signed-url-lambda-$(VERSION).zip
+GET_SIGNED_URL_LAMBDA_RESOURCES_FILES := $(wildcard $(GET_SIGNED_URL_LAMBDA_DIR)/*.*)
+
+$(GET_SIGNED_URL_LAMBDA_ZIP): $(GET_SIGNED_URL_LAMBDA_RESOURCES_FILES)
+	@echo "[INFO] Creating get signed url Lambda zip file"
+	sh -c "cd $(GET_SIGNED_URL_LAMBDA_DIR)  \
+	&& zip -r -q '../../build/$(OUT)/$(GET_SIGNED_URL_LAMBDA_ZIP)' *" ;
+#zip -r -q "$(OUT)/$(GET_SIGNED_URL_LAMBDA_ZIP)" $(GET_SIGNED_URL_LAMBDA_DIR) ; 
+
+upload-get-signed-url-lambda:
+		@echo "[INFO] uploading get signed url lambda"
+	aws s3 cp --acl public-read \
+			"$(OUT)/$(GET_SIGNED_URL_LAMBDA_ZIP)" "s3://$(BOOTSTRAP_BUCKET_PATH)/$(GET_SIGNED_URL_LAMBDA_ZIP)" \
 			| tee -a "$(OUT)/$(@)"
 
 # files in this repo are bundled in a zip file to boostrap the codecommit repo

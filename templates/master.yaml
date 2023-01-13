@@ -149,6 +149,16 @@ Parameters:
           This is an optional parameter, if set to True, the AWS Connect live Chat functionality will be available.
           A item to start a live chat will appear at the menu.
 
+    ShouldEnableUpload:
+        Type: String
+        Default: false
+        AllowedValues:
+          - true
+          - false
+        Description: >
+          This is an optional parameter, if set to True, the Lex Web UI will be able to accept uploaded files.
+          Please refer to documentation on creating an upload response.
+
     CodeBuildName:
         Type: String
         Description: >
@@ -500,6 +510,7 @@ Metadata:
                   - MinimizedButtonContent
                   - WebAppConfToolbarTitle
                   - ShouldLoadIframeMinimized
+                  - ShouldEnableUpload
             - Label:
                 default: Connect Live Chat Parameters
               Parameters:
@@ -551,6 +562,7 @@ Resources:
                 LexV2BotId: !Ref LexV2BotId
                 LexV2BotAliasId: !Ref LexV2BotAliasId
                 ShouldEnableLiveChat: !Ref ShouldEnableLiveChat
+                ShouldEnableUpload: !Ref ShouldEnableUpload
 
     ##########################################################################
     # Simplified deployment using CodeBuild to build config and push to S3
@@ -567,6 +579,7 @@ Resources:
                 SourceObject: !Sub "${BootstrapPrefix}/src-v0.19.6.zip"
                 CustomResourceCodeObject: !Sub "${BootstrapPrefix}/custom-resources-v0.19.6.zip"
                 InitiateChatLambdaCodeObject: !Sub "${BootstrapPrefix}/initiate-chat-lambda-v0.19.6.zip"
+                GetSignedUrlLambdaCodeObject: !Sub "${BootstrapPrefix}/get-signed-url-lambda-v0.19.6.zip"
                 CleanupBuckets: !Ref CleanupBuckets
                 BotName:
                     !If
@@ -599,6 +612,7 @@ Resources:
                 WebAppConfToolbarTitle: !Ref WebAppConfToolbarTitle
                 SaveHistory: !Ref SaveHistory
                 ShouldEnableLiveChat: !Ref ShouldEnableLiveChat
+                ShouldEnableUpload: !Ref ShouldEnableUpload
                 ShouldEnableCognitoLogin:
                   !If
                     - ShouldForceCognitoLogin
@@ -631,7 +645,7 @@ Resources:
                 ConnectChatEndedMessage: !Ref ConnectChatEndedMessage
                 ConnectAttachChatTranscript: !Ref ConnectAttachChatTranscript
                 ConnectLiveChatTerms: !Ref ConnectLiveChatTerms
-                Timestamp: 1665984339
+                Timestamp: 1673274931
 
     CognitoIdentityPoolConfig:
         Type: AWS::CloudFormation::Stack
@@ -645,7 +659,7 @@ Resources:
                 CodeBuildProjectName: !GetAtt CodeBuildDeploy.Outputs.CodeBuildProject
                 CognitoUserPool: !GetAtt CognitoIdentityPool.Outputs.CognitoUserPoolId
                 CognitoUserPoolClient: !GetAtt CognitoIdentityPool.Outputs.CognitoUserPoolClientId
-                Timestamp: 1665984339
+                Timestamp: 1673274931
 
 Outputs:
     BotName:

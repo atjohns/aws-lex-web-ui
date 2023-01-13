@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.19.7] - xxxx
+- Added the ability to upload files via Lex Web UI. Enabling the 'ShouldEnableUpload' option on the CloudFormation template will now deploy a Lambda Function, API Gateway endpoint and S3 bucket that will allow users to upload files into the S3 bucket via the web ui interface.
+
 ## [0.19.6] - 2022-10-17
 - Fix issue where some empty string variables would break the Code Deploy build, for example, if InitialText was cleared out of the CloudFormation parameters.
 - Added more CloudFormation parameters for commonly used UI properties. The new variables include:

@@ -42,6 +42,12 @@ Parameters:
         S3 object zip file containing Lambda custom resource functions
       Default: artifacts/aws-lex-web-ui/artifacts/initiate-chat-lambda.zip
 
+    GetSignedUrlLambdaCodeObject:
+      Type: String
+      Description: >
+        S3 object zip file containing Lambda custom resource functions
+      Default: artifacts/aws-lex-web-ui/artifacts/get-signed-url-lambda.zip
+
     CleanupBuckets:
         Type: String
         Default: true
@@ -330,6 +336,16 @@ Parameters:
         Description: >
           This is an optional parameter, if set to True, the AWS Connect live Chat functionality will be available.
           A item to start a live chat will appear at the menu.
+
+    ShouldEnableUpload:
+        Type: String
+        Default: false
+        AllowedValues:
+          - true
+          - false
+        Description: >
+          This is an optional parameter, if set to True, the Lex Web UI will be able to accept uploaded files.
+          Please refer to documentation on creating an upload response.
     
     HideButtonMessageBubble:
         Type: String
@@ -398,6 +414,8 @@ Conditions:
     NeedsParentOrigin: !Equals [!Ref ParentOrigin, '']
     ShouldCleanupBuckets: !Equals [!Ref CleanupBuckets, true]
     EnableLiveChat: !Equals [!Ref ShouldEnableLiveChat, true]
+    EnableUpload: !Equals [!Ref ShouldEnableUpload, true]
+    DeployAPI: !Or [!Equals [!Ref ShouldEnableLiveChat, true], !Equals [!Ref ShouldEnableUpload, true]]
 
 Resources:
     # Bucket where S3 access logs are stored
@@ -564,7 +582,7 @@ Resources:
 
     RestApi:
         Type: AWS::CloudFormation::Stack
-        Condition: EnableLiveChat
+        Condition: DeployAPI
         Properties:
           TimeoutInMinutes: 15
           TemplateURL: !Sub "https://${SourceBucket}.s3.${AWS::Region}.amazonaws.com/${SourcePrefix}/templates/restapi.yaml"
@@ -575,6 +593,8 @@ Resources:
               ConnectContactFlowId: !Ref ConnectContactFlowId
               ConnectInstanceId: !Ref ConnectInstanceId
               ParentOrigin: !Sub "https://${LexWebUiDistribution.DomainName}"
+              ShouldEnableLiveChat: !Ref ShouldEnableLiveChat
+              ShouldEnableUpload: !Ref ShouldEnableUpload
 
     CodeBuild:
         Type: AWS::CodeBuild::Project
@@ -597,7 +617,7 @@ Resources:
                     - Name: CONNECT_INSTANCE_ID
                       Value: !Ref ConnectInstanceId
                     - Name: CONNECT_API_GATEWAY_ENDPOINT
-                      Value: !If [EnableLiveChat, !Sub "https://${RestApi.Outputs.RestApiId}.execute-api.${AWS::Region}.amazonaws.com/Prod/livechat", ""]
+                      Value: !If [DeployAPI, !Sub "https://${RestApi.Outputs.RestApiId}.execute-api.${AWS::Region}.amazonaws.com/Prod/livechat", ""]
                     - Name: CONNECT_PROMPT_FOR_NAME_MESSAGE
                       Value: !Ref ConnectPromptForNameMessage
                     - Name: CONNECT_WAIT_FOR_AGENT_MESSAGE
@@ -687,6 +707,8 @@ Resources:
                       Value: !Ref retryCountPostTextTimeout
                     - Name: TIMESTAMP
                       Value: !Ref Timestamp
+                    - Name: ENABLE_UPLOAD
+                      Value: !Ref ShouldEnableUpload
 
             ServiceRole: !GetAtt CodeBuildRole.Arn
             TimeoutInMinutes: 10
@@ -745,6 +767,7 @@ Resources:
             WebAppConfToolbarTitle: !Ref WebAppConfToolbarTitle
             ShouldEnableCognitoLogin: !Ref ShouldEnableCognitoLogin
             ShouldEnableLiveChat: !Ref ShouldEnableLiveChat
+            ShouldEnableUpload: !Ref ShouldEnableUpload
             ShouldForceCognitoLogin: !Ref ShouldForceCognitoLogin
             ReInitSessionAttributesOnRestart: !Ref ReInitSessionAttributesOnRestart
             EnableMarkdownSupport: !Ref EnableMarkdownSupport
@@ -1022,4 +1045,4 @@ Outputs:
     RestApiId:
         Value: !Sub "${RestApi.Outputs.RestApiId}"
         Description: Rest API ID if required by other elements
-        Condition: EnableLiveChat
+        Condition: DeployAPI

@@ -847,6 +847,7 @@ export default {
     req.body = JSON.stringify(initiateChatRequest);
     req.headers.Host = endpoint.host;
     req.headers['Content-Length'] = Buffer.byteLength(req.body);
+    //req.headers['Access-Control-Allow-Origin'] = '*';
 
     const signer = new AWS.Signers.V4(req, 'execute-api');
     signer.addAuthorization(awsCredentials, new Date());
@@ -1150,5 +1151,53 @@ export default {
   },
   changeLocaleIds(context, data) {
     context.commit('updateLocaleIds', data);
+  },
+  uploadDataToS3(context, data) { 
+    
+  },
+  /***********************************************************************
+   *
+   * File Upload Actions
+   *
+   **********************************************************************/
+  getSignedUrl(context, fileParams) {
+    const uploadEndpoint = context.state.config.connect.apiGatewayEndpoint.replace('livechat','getsignedurl');
+    const uri = new URL(uploadEndpoint);
+    const endpoint = new AWS.Endpoint(uri.hostname);
+    const req = new AWS.HttpRequest(endpoint, context.state.config.region);
+
+    const bodyText = {
+      filename: fileParams.name,
+      filetype: fileParams.type
+    };
+
+    req.headers['Content-Type'] = 'application/json';
+    req.headers.Host = endpoint.host;
+    req.headers['Content-Length'] = Buffer.byteLength(bodyText);
+
+    const signer = new AWS.Signers.V4(req, 'execute-api');
+    signer.addAuthorization(awsCredentials, new Date());
+
+    const reqInit = {
+      method: 'POST',
+      mode: 'cors',
+      headers: req.headers,
+      body: JSON.stringify(bodyText)
+    };
+    
+    return fetch(
+      uploadEndpoint,
+      reqInit)    
+    .then((response) => {
+      console.log(response.data.uploadURL);
+      return response.data.uploadURL;
+    })
+    .catch((error) => {
+      console.error("Error uploading file");
+      return Promise.resolve();
+    });
+  },
+  submitFile() {
+    
   },
 };

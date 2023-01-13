@@ -47,7 +47,8 @@
     "messageMenu": true,
     "hideButtonMessageBubble": false,
     "saveHistory": false,
-    "enableLiveChat": false
+    "enableLiveChat": false,
+    "enableUpload": false
   },
   "polly": {
     "voiceId": "Salli"

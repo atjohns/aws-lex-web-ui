@@ -180,6 +180,7 @@ hide the message bubble on a response card button press.
 - `MessageMenu`: When set to true, each message will have an additional clickable menu on messages sent to the bot allowing you to repeat that message.
 - `BackButton`: This is an optional parameter, if set to true, will show a back button to go back to a previous message.
 - `MinimizedButtonContent`: Displays provided text when chat window is minimized.
+- `ShouldEnableUpload`: In addition to deploying the infrastructure necessary for file uploads (Lambda function, API Gateway endpoint & S3 bucket), when set to true a paperclick icon will be displayed in the bottom right of the chat window.
 
 ### Output
 Once the CloudFormation stack is successfully launched, the status of
