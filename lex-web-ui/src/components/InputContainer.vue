@@ -338,7 +338,7 @@ export default {
         fr.addEventListener('load', () => {
           this.url = fr.result
           this.fileObject = files[0] // this is an file that can be sent to server...
-          return this.$store.dispatch('getSignedUrl', this.fileObject)
+          return this.$store.dispatch('submitFile', this.fileObject)
         })
       } else {
         this.fileName = ''

@@ -22,7 +22,7 @@ License for the specific language governing permissions and limitations under th
 import Vue from 'vue';
 import Vuex from 'vuex';
 import Vuetify from 'vuetify';
-import DatetimePicker from 'vuetify-datetime-picker'
+import DatetimePicker from 'vuetify-datetime-picker';
 
 import 'roboto-fontface/css/roboto/roboto-fontface.css';
 import 'material-design-icons/iconfont/material-icons.css';

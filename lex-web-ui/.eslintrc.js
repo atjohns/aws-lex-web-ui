@@ -25,6 +25,16 @@ module.exports = {
     }],
     // allow debugger during development
     'no-debugger': process.env.NODE_ENV === 'production' ? 2 : 0,
+    'linebreak-style': ['error', process.platform === 'win32' ? 'windows' : 'unix'],
+    'no-redeclare': ["error", { "builtinGlobals": false }],
+    "operator-linebreak": [
+      "error",
+      "after",
+      {
+        "overrides": {
+        }
+      }
+    ]
   },
   overrides: [
     {

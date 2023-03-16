@@ -1197,7 +1197,32 @@ export default {
       return Promise.resolve();
     });
   },
-  submitFile() {
-    
+  submitFile(context, fileParams) {
+
+    fetch('https://6y4taig7id.execute-api.us-east-1.amazonaws.com/uploads?filename=' + fileParams.name + '&filetype=' + fileParams.type)
+    .then(response => {
+      //handle response      
+      return response.json();
+    })
+    .then(data => {
+      const putMethod = {
+        method: 'PUT', // Method itself
+        headers: {
+         'Content-type': fileParams.type
+        },
+       }
+       fetch(data.uploadURL, putMethod)
+       .then(response => {
+        
+       })
+       .catch(error => {
+          console.error("Error uploading file");
+          return Promise.resolve();
+      });
+    })
+    .catch(error => {
+      console.error("Error uploading file");
+      return Promise.resolve();
+    });
   },
 };

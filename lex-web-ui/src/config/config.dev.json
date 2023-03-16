@@ -1,22 +1,35 @@
 {
   "region": "us-east-1",
   "cognito": {
-    "poolId": "",
-    "appUserPoolClientId": "",
-    "appUserPoolName": "",
-    "appDomainName": "",
+    "poolId": "us-east-1:98131d49-c88e-43d4-bfb7-7296a5ff19b8",
+    "appUserPoolClientId": "209psopfcb4viteshuoo4tn4qg",
+    "appUserPoolName": "us-east-1_D6gFjBObV",
+    "appDomainName": "atjklexkwebkuikidentitypoolconfigkbgmfhjxqn564048246598.auth.us-east-1.amazoncognito.com",
     "aws_cognito_region": "us-east-1",
     "region": "us-east-1"
   },
+  "connect": {
+    "contactFlowId": "e1c5d682-0e91-4bb0-b26d-6d8b485ffb0e",
+    "instanceId": "680d95d3-2b76-43e1-9672-21e22e1e90c0",
+    "apiGatewayEndpoint": "https://l89eifgzwd.execute-api.us-east-1.amazonaws.com/Prod/livechat",
+    "promptForNameMessage": "Before starting a live chat, please tell me your name?",
+    "waitingForAgentMessage": "Thanks for waiting. An agent will be with you when available.",
+    "waitingForAgentMessageIntervalSeconds": "60",
+    "agentJoinedMessage": "{Agent} has joined.",
+    "agentLeftMessage": "{Agent} has left.",
+    "chatEndedMessage": "Chat ended.",
+    "attachChatTranscript": "false",
+    "liveChatTerms": "live chat"
+  },
   "lex": {
-    "v2BotId": "",
-    "v2BotAliasId": "",
-    "v2BotLocaleId": "",
-    "botName": "",
+    "v2BotId": "FBBHHQQWLK",
+    "v2BotAliasId": "LSZHMMT9YV",
+    "v2BotLocaleId": "en_US",
+    "botName": "QnA Demo Bot",
     "botAlias": "$LATEST",
-    "initialText": "Type 'Buy Flowers' to get started.",
+    "initialText": "",
     "initialSpeechInstruction": "Say 'Buy Flowers' to get started.",
-    "initialUtterance": "",
+    "initialUtterance": "Hello",
     "reInitSessionAttributesOnRestart": false,
     "region": "us-east-1",
     "retryOnLexPostTextTimeout": "false",
@@ -24,36 +37,28 @@
   },
   "ui": {
     "parentOrigin": "",
-    "toolbarTitle": "Order Flowers",
+    "toolbarTitle": "QnA Example Bot",
     "toolbarLogo": "",
     "positiveFeedbackIntent": "Thumbs up",
     "negativeFeedbackIntent": "Thumbs down",
     "helpIntent": "Help",
+    "minButtonContent": "chat",
+    "backButton": "true",
+    "messageMenu": "true",
+    "hideButtonMessageBubble": true,
     "enableLogin": false,
+    "enableLiveChat": true,
     "forceLogin": false,
     "AllowSuperDangerousHTMLInMessage": true,
     "shouldDisplayResponseCardTitle": false,
     "saveHistory": false,
-    "minButtonContent": "",
-    "hideInputFieldsForButtonResponse": false,
+    "helpContent": {},
+    "enableSFX": false,
+    "hideInputFieldsForButtonResponse": true,
     "pushInitialTextOnRestart": false,
     "directFocusToBotInput": false,
     "showDialogStateIcon": false,
-    "backButton": false,
-    "messageMenu": true,
-    "hideButtonMessageBubble": false,
-    "enableLiveChat": false
-  },
-  "connect": {
-    "contactFlowId" : "",
-    "instanceId" : "",
-    "apiGatewayEndpoint" : "",
-    "waitingForAgentMessage": "Thanks for waiting. An agent will be with you when available.",
-    "waitingForAgentMessageIntervalSeconds": 60,
-    "agentJoinedMessage": "{Agent} has joined.",
-    "agentLeftMessage": "{Agent} has left.", 
-    "chatEndedMessage": "Chat ended.",
-    "attachChatTranscript": true
+    "enableUpload": true
   },
   "polly": {
     "voiceId": "Salli"
@@ -63,7 +68,7 @@
   },
   "iframe": {
     "iframeOrigin": "",
-    "shouldLoadIframeMinimized": false,
+    "shouldLoadIframeMinimized": true,
     "iframeSrcPath": "/index.html#/?lexWebUiEmbed=true"
   }
 }
