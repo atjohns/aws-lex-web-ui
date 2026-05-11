@@ -38,6 +38,7 @@ License for the specific language governing permissions and limitations under th
 */
 import {chatMode} from '@/store/state';
 import { marked } from 'marked';
+import { escapeHtml, sanitizeHtml, stripHtmlTags } from '@/lib/sanitize';
 
 // Custom tokenizer for HTTPS and tel links
 const linkTokenizer = {
@@ -93,9 +94,9 @@ export default {
       let out = false;
       if (this.message.alts) {
         if (this.message.alts.html) {
-          out = this.message.alts.html;
+          out = sanitizeHtml(this.message.alts.html);
         } else if (this.message.alts.markdown) {
-          out = marked.parse(this.message.alts.markdown);
+          out = sanitizeHtml(marked.parse(this.message.alts.markdown));
         }
       }
       if (out) out = this.prependBotScreenReader(out);
@@ -114,12 +115,7 @@ export default {
   },
   methods: {
     encodeAsHtml(value) {
-      return value
-        .replace(/&/g, '&amp;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
+      return escapeHtml(value);
     },
     botMessageWithLinks(messageText) {
       const linkReplacers = [
@@ -180,9 +176,7 @@ export default {
     },
     // used for stripping SSML (and other) tags from bot responses
     stripTagsFromMessage(messageText) {
-      const doc = document.implementation.createHTMLDocument('').body;
-      doc.innerHTML = messageText;
-      return doc.textContent || doc.innerText || '';
+      return stripHtmlTags(messageText);
     },
     isLiveChat() {
       return (this.$store.state.config.ui.enableLiveChat &&

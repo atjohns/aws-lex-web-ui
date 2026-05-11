@@ -28,6 +28,7 @@ import silentOgg from '@/assets/silent.ogg';
 import silentMp3 from '@/assets/silent.mp3';
 // AWS Signature V4 signing utilities (replacement for deprecated Amplify Signer)
 import { signRequest, signUrl } from '@/store/sigv4-handlers';
+import { isAllowedUrl } from '@/lib/sanitize';
 
 import LexClient from '@/lib/lex/client';
 
@@ -531,7 +532,29 @@ export default {
     });
   },
   playSound(context, fileUrl) {
-    document.getElementById('sound').innerHTML = `<audio autoplay="autoplay"><source src="${fileUrl}" type="audio/mpeg" /><embed hidden="true" autostart="true" loop="false" src="${fileUrl}" /></audio>`;
+    const soundElement = document.getElementById('sound');
+    if (!soundElement || !isAllowedUrl(fileUrl)) {
+      return;
+    }
+
+    soundElement.textContent = '';
+
+    const audioElement = document.createElement('audio');
+    audioElement.autoplay = true;
+
+    const sourceElement = document.createElement('source');
+    sourceElement.src = fileUrl;
+    sourceElement.type = 'audio/mpeg';
+
+    const embedElement = document.createElement('embed');
+    embedElement.hidden = true;
+    embedElement.autostart = true;
+    embedElement.loop = false;
+    embedElement.src = fileUrl;
+
+    audioElement.appendChild(sourceElement);
+    audioElement.appendChild(embedElement);
+    soundElement.appendChild(audioElement);
   },
   setSessionAttribute(context, data) {
     return Promise.resolve(context.commit("setLexSessionAttributeValue", data));

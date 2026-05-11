@@ -31,13 +31,14 @@
         {{button.text}}
       </v-btn>
     </v-card-actions>
-    <v-card-actions v-if="responseCard.attachmentLinkUrl">
+    <v-card-actions v-if="safeAttachmentLinkUrl">
       <v-btn
         variant="flat"
         class="bg-red-lighten-5"
         tag="a"
-        :href="responseCard.attachmentLinkUrl"
+        :href="safeAttachmentLinkUrl"
         target="_blank"
+        rel="noopener noreferrer"
       >
         Open Link
       </v-btn>
@@ -58,6 +59,8 @@ or in the "license" file accompanying this file. This file is distributed on an 
 BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or implied. See the
 License for the specific language governing permissions and limitations under the License.
 */
+import { isAllowedUrl } from '@/lib/sanitize';
+
 export default {
   name: 'response-card',
   props: ['response-card'],
@@ -75,6 +78,11 @@ export default {
         this.$store.state.config.ui.shouldDisableClickedResponseCardButtons &&
         (this.hasButtonBeenClicked || this.getRCButtonsDisabled())
       );
+    },
+    safeAttachmentLinkUrl() {
+      return isAllowedUrl(this.responseCard.attachmentLinkUrl)
+        ? this.responseCard.attachmentLinkUrl
+        : '';
     },
   },
   inject: ['getRCButtonsDisabled','setRCButtonsDisabled'],
