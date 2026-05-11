@@ -20,16 +20,16 @@
     "test:integration": "jest --config test/integration/jest.config.js"
   },
   "dependencies": {
-    "amazon-connect-chatjs": "^2.3.0",
+    "@aws-crypto/sha256-js": "^5.2.0",
     "@aws-sdk/client-cognito-identity": "3.1015.0",
     "@aws-sdk/client-connect": "3.1015.0",
     "@aws-sdk/client-lex-runtime-v2": "3.1015.0",
     "@aws-sdk/client-polly": "3.1015.0",
     "@aws-sdk/client-s3": "3.1015.0",
     "@aws-sdk/credential-providers": "3.1015.0",
-    "@smithy/signature-v4": "^5.3.12",
-    "@aws-crypto/sha256-js": "^5.2.0",
     "@smithy/protocol-http": "^5.3.12",
+    "@smithy/signature-v4": "^5.3.12",
+    "amazon-connect-chatjs": "^2.3.2",
     "browserify-zlib": "^0.2.0",
     "buffer": "^6.0.3",
     "core-js": "^3.6.5",
@@ -52,7 +52,7 @@
     "eslint-plugin-vue": "^9.19.2",
     "jest": "^30.2.0",
     "sass": "^1.97.2",
-    "vite": "^7.3.1",
+    "vite": "^7.3.2",
     "vite-plugin-node-polyfills": "^0.24.0",
     "vite-plugin-vuetify": "^2.1.2"
   },
@@ -61,6 +61,6 @@
     "npm": ">=10.0.0"
   },
   "overrides": {
-    "postcss": "8.4.32"
+    "postcss": "8.5.10"
   }
 }

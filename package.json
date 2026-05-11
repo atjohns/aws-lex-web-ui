@@ -37,9 +37,9 @@
     "lint": "eslint --format node_modules/eslint-formatter-friendly src/lex-web-ui-loader"
   },
   "dependencies": {
-    "amazon-cognito-auth-js": "^1.2.4",
     "@aws-sdk/client-cognito-identity": "^3.1015.0",
     "@aws-sdk/credential-providers": "^3.1015.0",
+    "amazon-cognito-auth-js": "^1.2.4",
     "core-js": "^3.6.5",
     "jsdom": "^22.0.0",
     "jwt-decode": "^4.0.0",
@@ -49,7 +49,7 @@
   "devDependencies": {
     "@babel/core": "^7.23.5",
     "@babel/plugin-transform-runtime": "^7.23.4",
-    "@babel/preset-env": "^7.23.5",
+    "@babel/preset-env": "^7.29.5",
     "autoprefixer": "^10.4.16",
     "babel-eslint": "^10.1.0",
     "cross-env": "^10.1.0",
@@ -58,9 +58,9 @@
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-formatter-friendly": "^7.0.0",
     "eslint-plugin-import": "^2.20.2",
-    "express": "^4.17.1",
-    "postcss": "^8.4.32",
-    "vite": "^7.3.1",
+    "express": "^4.22.1",
+    "postcss": "^8.5.10",
+    "vite": "^7.3.2",
     "vite-plugin-node-polyfills": "^0.24.0"
   },
   "engines": {
