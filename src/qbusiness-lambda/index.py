@@ -6,11 +6,13 @@ import os
 import random
 import string
 import uuid
+from urllib.parse import urlparse
 import boto3
 
 AMAZONQ_APP_ID = os.environ.get("AMAZONQ_APP_ID")
 AMAZONQ_REGION = os.environ["AWS_REGION"]
 AMAZONQ_ENDPOINT_URL = os.environ.get("AMAZONQ_ENDPOINT_URL") or f'https://qbusiness.{AMAZONQ_REGION}.api.aws'
+UPLOAD_BUCKET = os.environ.get("UPLOAD_BUCKET", "")
 print("AMAZONQ_ENDPOINT_URL:", AMAZONQ_ENDPOINT_URL)
 
 def close(intent, sessionAttributes, message):
@@ -57,11 +59,25 @@ def get_amazonq_response(prompt, context, attachments, qbusiness_client):
     return resp
 
 
+def parse_upload_s3_path(s3Path):
+    parsed_s3_path = urlparse(s3Path)
+    if parsed_s3_path.scheme != "s3" or not parsed_s3_path.netloc or not parsed_s3_path.path:
+        raise ValueError("Invalid S3 attachment path")
+
+    bucket = parsed_s3_path.netloc
+    key = parsed_s3_path.path.lstrip("/")
+    if not key:
+        raise ValueError("Invalid S3 attachment key")
+
+    if not UPLOAD_BUCKET or bucket != UPLOAD_BUCKET:
+        raise ValueError("S3 attachment path is outside the configured upload bucket")
+
+    return bucket, key
+
+
 def getS3File(s3Path):
-    if s3Path.startswith("s3://"):
-        s3Path = s3Path[5:]
+    bucket, key = parse_upload_s3_path(s3Path)
     s3 = boto3.resource('s3')
-    bucket, key = s3Path.split("/", 1)
     obj = s3.Object(bucket, key)
     return obj.get()['Body'].read()
 
