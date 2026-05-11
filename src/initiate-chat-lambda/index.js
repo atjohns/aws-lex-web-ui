@@ -3,7 +3,6 @@ const client = new ConnectClient({ region: process.env.REGION });
 const parentOrigin = process.env.PARENT_ORIGIN;
 
 exports.handler = (event, context, callback) => {
-    console.log("Received event: " + JSON.stringify(event));
     const body = JSON.parse(event["body"]);
     console.log(`parent origin in environment: ${parentOrigin}`);
 
@@ -16,17 +15,8 @@ exports.handler = (event, context, callback) => {
 };
 
 async function startChatContact(body) {
-    let contactFlowId = "";
-    if (body.hasOwnProperty('ContactFlowId')) {
-        contactFlowId = body["ContactFlowId"];
-    }
-    console.log("CF ID: " + contactFlowId);
-
-    let instanceId = "";
-    if (body.hasOwnProperty('InstanceId')) {
-        instanceId = body["InstanceId"];
-    }
-    console.log("Instance ID: " + instanceId);
+    console.log("CF ID: " + process.env.CONTACT_FLOW_ID);
+    console.log("Instance ID: " + process.env.INSTANCE_ID);
 
     let initialMsgContent = "";
     let initialMsgContentType = "";
@@ -40,18 +30,21 @@ async function startChatContact(body) {
         }
     }
     
-    let attributes = "";
+    let attributes = {};
     if (body.hasOwnProperty("Attributes")) {
-        attributes = body["Attributes"];
+        attributes = filterConnectAttributes(body["Attributes"]);
     }
+    const displayName = body.ParticipantDetails && body.ParticipantDetails.DisplayName
+        ? String(body.ParticipantDetails.DisplayName)
+        : "Customer";
 
     const startChat = {
-        "InstanceId": instanceId == "" ? process.env.INSTANCE_ID : instanceId,
-        "ContactFlowId": contactFlowId == "" ? process.env.CONTACT_FLOW_ID : contactFlowId,
+        "InstanceId": process.env.INSTANCE_ID,
+        "ContactFlowId": process.env.CONTACT_FLOW_ID,
         "Attributes": attributes,
         "ChatDurationInMinutes": 60,
         "ParticipantDetails": {
-            "DisplayName": body["ParticipantDetails"]["DisplayName"]
+            "DisplayName": displayName
         }
     };
     
@@ -70,8 +63,23 @@ async function startChatContact(body) {
     } catch (error) {
         console.log("Error starting the chat.");
         console.log(error, error.stack);
-        return response;
+        throw error;
     }
+}
+
+function filterConnectAttributes(attributes) {
+    if (!attributes || typeof attributes !== "object" || Array.isArray(attributes)) {
+        return {};
+    }
+
+    return Object.keys(attributes).filter((key) => (
+        key === "topic" || key.startsWith("connect_")
+    )).reduce((filteredAttributes, key) => {
+        if (typeof attributes[key] === "string") {
+            filteredAttributes[key] = attributes[key];
+        }
+        return filteredAttributes;
+    }, {});
 }
 
 function buildSuccessfulResponse(result) {
