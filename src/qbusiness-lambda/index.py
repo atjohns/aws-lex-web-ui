@@ -6,11 +6,13 @@ import os
 import random
 import string
 import uuid
+from urllib.parse import urlparse
 import boto3
 
 AMAZONQ_APP_ID = os.environ.get("AMAZONQ_APP_ID")
 AMAZONQ_REGION = os.environ["AWS_REGION"]
 AMAZONQ_ENDPOINT_URL = os.environ.get("AMAZONQ_ENDPOINT_URL") or f'https://qbusiness.{AMAZONQ_REGION}.api.aws'
+UPLOAD_BUCKET = os.environ.get("UPLOAD_BUCKET", "")
 print("AMAZONQ_ENDPOINT_URL:", AMAZONQ_ENDPOINT_URL)
 
 def close(intent, sessionAttributes, message):
@@ -29,7 +31,11 @@ def close(intent, sessionAttributes, message):
     return response
     
 def get_amazonq_response(prompt, context, attachments, qbusiness_client):
-    print(f"get_amazonq_response: prompt={prompt}, app_id={AMAZONQ_APP_ID}, context={context}")
+    attachment_count = len(attachments) if attachments else 0
+    print(
+        f"get_amazonq_response: app_id={AMAZONQ_APP_ID}, "
+        f"has_context={bool(context)}, attachment_count={attachment_count}"
+    )
     input = {
         "applicationId": AMAZONQ_APP_ID,
         "userMessage": prompt
@@ -45,7 +51,15 @@ def get_amazonq_response(prompt, context, attachments, qbusiness_client):
     if attachments:
         input["attachments"] = attachments
 
-    print("Amazon Q Input: ", input)
+    print(
+        "Amazon Q request metadata: ",
+        {
+            "applicationId": input["applicationId"],
+            "hasConversationId": "conversationId" in input,
+            "hasParentMessageId": "parentMessageId" in input,
+            "attachmentCount": attachment_count
+        }
+    )
     try:
         resp = qbusiness_client.chat_sync(**input)
     except Exception as e:
@@ -53,15 +67,36 @@ def get_amazonq_response(prompt, context, attachments, qbusiness_client):
         resp = {
             "systemMessage": "Amazon Q Error: " + str(e)
         }
-    print("Amazon Q Response: ", json.dumps(resp, default=str))
+    print(
+        "Amazon Q response metadata: ",
+        {
+            "hasConversationId": "conversationId" in resp,
+            "hasSystemMessageId": "systemMessageId" in resp,
+            "sourceAttributionCount": len(resp.get("sourceAttributions", []))
+        }
+    )
     return resp
 
 
+def parse_upload_s3_path(s3Path):
+    parsed_s3_path = urlparse(s3Path)
+    if parsed_s3_path.scheme != "s3" or not parsed_s3_path.netloc or not parsed_s3_path.path:
+        raise ValueError("Invalid S3 attachment path")
+
+    bucket = parsed_s3_path.netloc
+    key = parsed_s3_path.path.lstrip("/")
+    if not key:
+        raise ValueError("Invalid S3 attachment key")
+
+    if not UPLOAD_BUCKET or bucket != UPLOAD_BUCKET:
+        raise ValueError("S3 attachment path is outside the configured upload bucket")
+
+    return bucket, key
+
+
 def getS3File(s3Path):
-    if s3Path.startswith("s3://"):
-        s3Path = s3Path[5:]
+    bucket, key = parse_upload_s3_path(s3Path)
     s3 = boto3.resource('s3')
-    bucket, key = s3Path.split("/", 1)
     obj = s3.Object(bucket, key)
     return obj.get()['Body'].read()
 
@@ -71,9 +106,8 @@ def getAttachments(event):
     userFilesUploaded = event["sessionState"]["sessionAttributes"].get("userFilesUploaded", [])
     if userFilesUploaded:
         filesJson = json.loads(userFilesUploaded)
-        print(filesJson)
+        print(f"getAttachments: attachment_count={len(filesJson)}")
         for userFile in filesJson:
-            print(f"getAttachments: userFile={userFile}")
             attachments.append({
                 "data": getS3File(userFile["s3Path"]),
                 "name": userFile["fileName"]
@@ -120,7 +154,6 @@ def get_idc_iam_credentials(jwt):
         assertion=jwt,
     )
 
-    print(idc_sso_resp)
     idc_sso_id_token_jwt = json.loads(base64.b64decode(idc_sso_resp['idToken'].split('.')[1] + '==').decode())
 
     sts_context = idc_sso_id_token_jwt["sts:identity_context"]
@@ -142,7 +175,15 @@ def get_idc_iam_credentials(jwt):
 
 
 def lambda_handler(event, context):
-    print("Received event: %s" % json.dumps(event))
+    session_state = event.get("sessionState", {})
+    intent = session_state.get("intent", {})
+    print(
+        "Received Lex event metadata: %s" % json.dumps({
+            "sessionId": event.get("sessionId"),
+            "invocationSource": event.get("invocationSource"),
+            "intentName": intent.get("name")
+        })
+    )
     try:
         userInput = event["inputTranscript"]
         amazonq_context = {}
@@ -202,5 +243,8 @@ def lambda_handler(event, context):
         intent['state'] = 'Fulfilled'
         response = close(intent, sessionAttributes, messageArray)
             
-    print("Returning response: %s" % json.dumps(response))
+    print("Returning Lex response metadata: %s" % json.dumps({
+        "messageCount": len(response.get("messages", [])),
+        "intentState": response.get("sessionState", {}).get("intent", {}).get("state")
+    }))
     return response
