@@ -1,6 +1,7 @@
 const { ConnectClient, StartChatContactCommand } = require("@aws-sdk/client-connect");
 const client = new ConnectClient({ region: process.env.REGION });
 const parentOrigin = process.env.PARENT_ORIGIN;
+const allowedAttributeNamePattern = /^[A-Za-z0-9_.:-]{1,128}$/;
 
 exports.handler = (event, context, callback) => {
     console.log("Received event: " + JSON.stringify(event));
@@ -15,39 +16,44 @@ exports.handler = (event, context, callback) => {
     });
 };
 
-async function startChatContact(body) {
-    let contactFlowId = "";
-    if (body.hasOwnProperty('ContactFlowId')) {
-        contactFlowId = body["ContactFlowId"];
+function sanitizeContactAttributes(attributes) {
+    if (!attributes || typeof attributes !== "object" || Array.isArray(attributes)) {
+        return {};
     }
-    console.log("CF ID: " + contactFlowId);
 
-    let instanceId = "";
-    if (body.hasOwnProperty('InstanceId')) {
-        instanceId = body["InstanceId"];
+    return Object.keys(attributes).filter((key) => {
+        return (key === "topic" || key.startsWith("connect_")) && allowedAttributeNamePattern.test(key);
+    }).reduce((sanitized, key) => {
+        const value = attributes[key];
+        if (["string", "number", "boolean"].includes(typeof value)) {
+            sanitized[key] = String(value);
+        }
+        return sanitized;
+    }, {});
+}
+
+async function startChatContact(body) {
+    if (!process.env.CONTACT_FLOW_ID || !process.env.INSTANCE_ID) {
+        throw new Error("Connect instance and contact flow must be configured");
     }
-    console.log("Instance ID: " + instanceId);
 
     let initialMsgContent = "";
     let initialMsgContentType = "";
     if (body.hasOwnProperty("InitialMessage")) {
-        if (body["InitialMessage"].hasOwnProperty("Content")) {
+        if (body["InitialMessage"].hasOwnProperty("Content") && typeof body["InitialMessage"]["Content"] === "string") {
             initialMsgContent = body["InitialMessage"]["Content"];
 
         }
-        if (body["InitialMessage"].hasOwnProperty("ContentType")) {
+        if (body["InitialMessage"].hasOwnProperty("ContentType") && typeof body["InitialMessage"]["ContentType"] === "string") {
             initialMsgContentType = body["InitialMessage"]["ContentType"];
         }
     }
     
-    let attributes = "";
-    if (body.hasOwnProperty("Attributes")) {
-        attributes = body["Attributes"];
-    }
+    const attributes = sanitizeContactAttributes(body["Attributes"]);
 
     const startChat = {
-        "InstanceId": instanceId == "" ? process.env.INSTANCE_ID : instanceId,
-        "ContactFlowId": contactFlowId == "" ? process.env.CONTACT_FLOW_ID : contactFlowId,
+        "InstanceId": process.env.INSTANCE_ID,
+        "ContactFlowId": process.env.CONTACT_FLOW_ID,
         "Attributes": attributes,
         "ChatDurationInMinutes": 60,
         "ParticipantDetails": {
@@ -64,14 +70,8 @@ async function startChatContact(body) {
     
     console.log('startChat params', startChat);
     const command = new StartChatContactCommand(startChat);
-    try {
-        const response = await client.send(command);
-        return response;
-    } catch (error) {
-        console.log("Error starting the chat.");
-        console.log(error, error.stack);
-        return response;
-    }
+    const response = await client.send(command);
+    return response;
 }
 
 function buildSuccessfulResponse(result) {

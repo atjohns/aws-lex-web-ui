@@ -6,11 +6,13 @@ import os
 import random
 import string
 import uuid
+from urllib.parse import urlparse
 import boto3
 
 AMAZONQ_APP_ID = os.environ.get("AMAZONQ_APP_ID")
 AMAZONQ_REGION = os.environ["AWS_REGION"]
 AMAZONQ_ENDPOINT_URL = os.environ.get("AMAZONQ_ENDPOINT_URL") or f'https://qbusiness.{AMAZONQ_REGION}.api.aws'
+UPLOAD_BUCKET = os.environ.get("UPLOAD_BUCKET", "").strip()
 print("AMAZONQ_ENDPOINT_URL:", AMAZONQ_ENDPOINT_URL)
 
 def close(intent, sessionAttributes, message):
@@ -57,26 +59,54 @@ def get_amazonq_response(prompt, context, attachments, qbusiness_client):
     return resp
 
 
-def getS3File(s3Path):
-    if s3Path.startswith("s3://"):
-        s3Path = s3Path[5:]
+def parseS3Path(s3Path):
+    if not isinstance(s3Path, str):
+        return None, None
+
+    parsed = urlparse(s3Path)
+    if parsed.scheme != "s3" or not parsed.netloc:
+        return None, None
+
+    key = parsed.path.lstrip("/")
+    if not key:
+        return None, None
+
+    return parsed.netloc, key
+
+
+def getS3File(bucket, key):
     s3 = boto3.resource('s3')
-    bucket, key = s3Path.split("/", 1)
     obj = s3.Object(bucket, key)
     return obj.get()['Body'].read()
 
 
 def getAttachments(event):
     attachments = []
+    if not UPLOAD_BUCKET:
+        return attachments
+
+    sessionId = event.get("sessionId")
+    if not sessionId:
+        print("getAttachments: rejecting attachments without a Lex sessionId")
+        return attachments
+
     userFilesUploaded = event["sessionState"]["sessionAttributes"].get("userFilesUploaded", [])
     if userFilesUploaded:
         filesJson = json.loads(userFilesUploaded)
-        print(filesJson)
         for userFile in filesJson:
-            print(f"getAttachments: userFile={userFile}")
+            if not isinstance(userFile, dict):
+                print(f"getAttachments: rejected malformed attachment for sessionId={sessionId}")
+                continue
+
+            bucket, key = parseS3Path(userFile.get("s3Path"))
+            if bucket != UPLOAD_BUCKET or not key.startswith(f"{sessionId}/"):
+                print(f"getAttachments: rejected unauthorized S3 attachment path for sessionId={sessionId}")
+                continue
+
+            print(f"getAttachments: accepted attachment fileName={userFile.get('fileName')}")
             attachments.append({
-                "data": getS3File(userFile["s3Path"]),
-                "name": userFile["fileName"]
+                "data": getS3File(bucket, key),
+                "name": userFile.get("fileName", key.rsplit("/", 1)[-1])
             })
         # delete userFilesUploaded from session
         event["sessionState"]["sessionAttributes"].pop("userFilesUploaded", None)
