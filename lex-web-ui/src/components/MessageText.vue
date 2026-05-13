@@ -38,6 +38,7 @@ License for the specific language governing permissions and limitations under th
 */
 import {chatMode} from '@/store/state';
 import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 
 // Custom tokenizer for HTTPS and tel links
 const linkTokenizer = {
@@ -93,9 +94,9 @@ export default {
       let out = false;
       if (this.message.alts) {
         if (this.message.alts.html) {
-          out = this.message.alts.html;
+          out = this.sanitizeHtml(this.message.alts.html);
         } else if (this.message.alts.markdown) {
-          out = marked.parse(this.message.alts.markdown);
+          out = this.sanitizeHtml(marked.parse(this.message.alts.markdown));
         }
       }
       if (out) out = this.prependBotScreenReader(out);
@@ -109,10 +110,15 @@ export default {
       // to context (e.g. URL, HTML). This is rendered as HTML
       const messageText = this.stripTagsFromMessage(this.message.text);
       const messageWithLinks = this.botMessageWithLinks(messageText);
-      return this.prependBotScreenReader(messageWithLinks);
+      return this.prependBotScreenReader(this.sanitizeHtml(messageWithLinks));
     },
   },
   methods: {
+    sanitizeHtml(value) {
+      return DOMPurify.sanitize(value, {
+        ADD_ATTR: ['target'],
+      });
+    },
     encodeAsHtml(value) {
       return value
         .replace(/&/g, '&amp;')

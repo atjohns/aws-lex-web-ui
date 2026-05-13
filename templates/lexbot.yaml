@@ -45,6 +45,12 @@ Parameters:
         Type: String
         Default: aws-bigdata-blog
 
+    UploadBucket:
+        Type: String
+        Default: ''
+        Description: >
+            If enabling upload, the name of the S3 bucket where uploaded documents should be stored
+
     VpcSubnetId:
         Type: String
         Default: ''
@@ -59,6 +65,7 @@ Conditions:
     EnableQBusiness: !Not [!Equals [!Ref AmazonQAppId, '']]
     ExampleBot: !Equals [!Ref AmazonQAppId, '']
     DeleteBot: !Equals [!Ref ShouldDeleteBot, true]
+    UploadBucketProvided: !Not [!Equals [!Ref UploadBucket, '']]
     NeedsVpc:  !And [ !Not [ !Equals [!Ref VpcSubnetId, ''] ], !Not [ !Equals [!Ref VpcSecurityGroupId, ''] ] ] 
 
 Resources:
@@ -388,14 +395,17 @@ Resources:
                   - "qbusiness:ChatSync"
                 Resource: !Sub "arn:aws:qbusiness:${AWS::Region}:${AWS::AccountId}:application/${AmazonQAppId}"
           PolicyName: QBusinessPolicy
-        - PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - "s3:GetObject"
-                Resource: "arn:aws:s3:::*/*"
-          PolicyName: S3ImportBucketPolicy
+        - !If
+          - UploadBucketProvided
+          - PolicyDocument:
+              Version: 2012-10-17
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - "s3:GetObject"
+                  Resource: !Sub "arn:${AWS::Partition}:s3:::${UploadBucket}/*"
+            PolicyName: S3ImportBucketPolicy
+          - !Ref AWS::NoValue
         - PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -466,6 +476,7 @@ Resources:
           KMS_KEY_ID: !Ref KMSKey
           IDC_CLIENT_ID: !Ref IDCApplicationARN
           AMAZONQ_ENDPOINT_URL: !Ref AmazonQEndpointUrl
+          UPLOAD_BUCKET: !Ref UploadBucket
 
   QBusinessBotPermission:
     Type: AWS::Lambda::Permission
