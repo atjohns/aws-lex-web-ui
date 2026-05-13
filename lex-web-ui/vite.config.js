@@ -288,7 +288,7 @@ const libraryConfig = {
         },
         // Ensure CSS files are named consistently
         assetFileNames: (assetInfo) => {
-          if (assetInfo.name === 'style.css') {
+          if (assetInfo.name && assetInfo.name.endsWith('.css')) {
             return buildConfig.isProd ? `lex-web-ui.min.css` : `lex-web-ui.css`
           }
           return `${assetInfo.name}`
