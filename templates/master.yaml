@@ -712,6 +712,7 @@ Resources:
                 QBusinessLambdaCodeObject: !Sub "${BootstrapPrefix}/qbusiness-lambda-v0.24.0.zip"
                 AmazonQAppId: !Ref AmazonQAppId
                 IDCApplicationARN: !Ref IDCApplicationARN
+                UploadBucket: !Ref UploadBucket
                 VpcSubnetId: !Ref VpcSubnetId
                 VpcSecurityGroupId: !Ref VpcSecurityGroupId
 
