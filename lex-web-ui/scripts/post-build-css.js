@@ -17,6 +17,7 @@ const isProd = process.env.NODE_ENV?.trim() === 'production';
 const bundleDir = path.join(__dirname, '..', 'dist', 'bundle');
 const cssFileName = isProd ? 'lex-web-ui.min.css' : 'lex-web-ui.css';
 const sourceCssFile = path.join(bundleDir, cssFileName);
+const fallbackCssFile = path.join(bundleDir, 'lex-web-ui.css');
 
 // Only run for library builds
 if (process.env.BUILD_TARGET?.trim() !== 'lib') {
@@ -26,8 +27,13 @@ if (process.env.BUILD_TARGET?.trim() !== 'lib') {
 
 // Check if source CSS file exists
 if (!fs.existsSync(sourceCssFile)) {
-  console.error('Source CSS file not found:', sourceCssFile);
-  process.exit(1);
+  if (isProd && fs.existsSync(fallbackCssFile)) {
+    fs.renameSync(fallbackCssFile, sourceCssFile);
+    console.log(`✓ Renamed ${path.basename(fallbackCssFile)} to ${path.basename(sourceCssFile)}`);
+  } else {
+    console.error('Source CSS file not found:', sourceCssFile);
+    process.exit(1);
+  }
 }
 
 /**
