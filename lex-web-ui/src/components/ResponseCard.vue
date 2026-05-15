@@ -31,13 +31,14 @@
         {{button.text}}
       </v-btn>
     </v-card-actions>
-    <v-card-actions v-if="responseCard.attachmentLinkUrl">
+    <v-card-actions v-if="safeAttachmentLinkUrl">
       <v-btn
         variant="flat"
         class="bg-red-lighten-5"
         tag="a"
-        :href="responseCard.attachmentLinkUrl"
+        :href="safeAttachmentLinkUrl"
         target="_blank"
+        rel="noopener noreferrer"
       >
         Open Link
       </v-btn>
@@ -75,6 +76,20 @@ export default {
         this.$store.state.config.ui.shouldDisableClickedResponseCardButtons &&
         (this.hasButtonBeenClicked || this.getRCButtonsDisabled())
       );
+    },
+    safeAttachmentLinkUrl() {
+      const rawUrl = this.responseCard.attachmentLinkUrl;
+      if (typeof rawUrl !== 'string' || rawUrl.trim() === '') {
+        return '';
+      }
+      const linkUrl = rawUrl.trim();
+
+      try {
+        const url = new URL(linkUrl, window.location.origin);
+        return ['http:', 'https:'].includes(url.protocol) ? linkUrl : '';
+      } catch (err) {
+        return '';
+      }
     },
   },
   inject: ['getRCButtonsDisabled','setRCButtonsDisabled'],

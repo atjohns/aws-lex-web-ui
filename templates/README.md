@@ -133,6 +133,9 @@ is first pressed in a conversation
 - `WebAppConfPositiveFeedback`: String message sent by the user to signal a positive feedback response if empty icon will not be displayed
 - `EnableMarkdownSupport`: Enables support of Markdown formatting in the UI by 
 bots that provide Markdown formatting in their esponses.
+- `AllowSuperDangerousHTMLInMessage`: When set to true with `EnableMarkdownSupport`,
+renders bot-provided HTML/Markdown from `appContext.altMessages` as HTML. Only
+enable this if the bot sanitizes that content before returning it.
 - `ShouldLoadIframeMinimized`: When set to true and using the lex-web-ui embedded
 in an iframe, the ChatBot Iframe will be minimized when the page is loaded. 
 - `ShowResponseCardTitle`: Lex and Alexa based bots may return ResponseCards. 

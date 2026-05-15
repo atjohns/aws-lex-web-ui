@@ -190,6 +190,17 @@ Parameters:
             scripting (XSS) attack from insecure Bots. Make sure you trust the Bot being used
             by the LexWebUi.
 
+    AllowSuperDangerousHTMLInMessage:
+        Type: String
+        Default: false
+        AllowedValues:
+        - true
+        - false
+        Description: >
+            If set to True with EnableMarkdownSupport, render bot-provided HTML/Markdown
+            from appContext.altMessages as HTML. Only enable this when the bot sanitizes
+            the content before returning it.
+
     ReInitSessionAttributesOnRestart:
         Type: String
         Default: false
@@ -611,6 +622,7 @@ Metadata:
                   - ForceCognitoLogin
                   - AllowedSignUpEmailDomain
                   - EnableMarkdownSupport
+                  - AllowSuperDangerousHTMLInMessage
                   - ReInitSessionAttributesOnRestart
                   - ShowResponseCardTitle
                   - SaveHistory
@@ -798,6 +810,7 @@ Resources:
                 ShouldForceCognitoLogin: !Ref ForceCognitoLogin
                 ReInitSessionAttributesOnRestart: !Ref ReInitSessionAttributesOnRestart
                 EnableMarkdownSupport: !Ref EnableMarkdownSupport
+                AllowSuperDangerousHTMLInMessage: !Ref AllowSuperDangerousHTMLInMessage
                 ShouldLoadIframeMinimized: !Ref ShouldLoadIframeMinimized
                 ShowResponseCardTitle: !Ref ShowResponseCardTitle
                 CognitoAppUserPoolClientId:
