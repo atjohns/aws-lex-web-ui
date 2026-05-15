@@ -255,6 +255,34 @@ describe('Message.vue', function () {
       });
   });
 
+  it('should only render safe response card attachment links', function () {
+    const responseCard = {
+      version: 1,
+      contentType: 'application/vnd.amazonaws.card.generic',
+      genericAttachments: [{
+        title: 'test',
+        attachmentLinkUrl: 'javascript:alert(document.domain)',
+      }],
+    };
+
+    vm.$set(vm.message, 'responseCard', responseCard);
+
+    return vm.$nextTick()
+      .then(() => {
+        let linkEl = vm.$el.querySelector('.message > .message-layout a');
+        expect(linkEl, 'unsafe response card link').is.equal(null);
+
+        vm.message.responseCard.genericAttachments[0].attachmentLinkUrl = 'https://example.com/file.pdf';
+        return vm.$nextTick();
+      })
+      .then(() => {
+        const linkEl = vm.$el.querySelector('.message > .message-layout a');
+        expect(linkEl, 'safe response card link').is.not.equal(null);
+        expect(linkEl.getAttribute('href')).is.equal('https://example.com/file.pdf');
+        expect(linkEl.getAttribute('rel')).is.equal('noopener noreferrer');
+      });
+  });
+
   it('should condionally render markdown from a message', function () {
     expect(vm.$store.state.config.ui.AllowSuperDangerousHTMLInMessage)
       .is.equal(false);

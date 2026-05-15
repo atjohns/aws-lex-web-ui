@@ -62,7 +62,7 @@
     "forceLogin": false,
     "enableUpload": true,
     "uploadS3BucketName": "atj-textract-demo-103122",
-    "AllowSuperDangerousHTMLInMessage": true,
+    "AllowSuperDangerousHTMLInMessage": false,
     "shouldDisplayResponseCardTitle": false,
     "saveHistory": false,
     "helpContent": {},

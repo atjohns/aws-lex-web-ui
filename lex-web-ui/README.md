@@ -396,7 +396,7 @@ and/or Markdown messages the response message's session attributes.
 
 To utilize the second approach configure and use the following:
 
-* Set the `ui.AllowSuperDangerousHTMLInMessage` config field to `true`. __WARNING__: Enabling this feature increases the risk of XSS. Make sure that the HTML/Markdown message has been properly escaped/encoded/filtered in the Lex Handler Lambda function. For more information on XSS see [here](https://www.owasp.org/index.php/Cross-site_Scripting_(XSS))
+* Set the `ui.AllowSuperDangerousHTMLInMessage` config field to `true` (or set the `AllowSuperDangerousHTMLInMessage` CloudFormation parameter to `true` when deploying with the templates). __WARNING__: Enabling this feature increases the risk of XSS. Make sure that the HTML/Markdown message has been properly escaped/encoded/filtered in the Lex Handler Lambda function. For more information on XSS see [here](https://www.owasp.org/index.php/Cross-site_Scripting_(XSS))
 
 * If using markdown to render images or video from another domain, add those domains as a space seperated list in the Cloudformation template `MarkdownSupportDomains` field - this will update the Cloudfront security headers to allow those domains.
 
