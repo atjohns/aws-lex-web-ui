@@ -55,10 +55,18 @@ Parameters:
         Default: ''
         Description: ID of a security group where all Lambda functions will run, only used if you need Lambda to run in a VPC
 
+    UploadBucket:
+        Type: String
+        Default: ''
+        Description: >
+            S3 bucket used for Lex Web UI document uploads. The Q Business fulfillment
+            Lambda may only read objects from this bucket.
+
 Conditions:
     EnableQBusiness: !Not [!Equals [!Ref AmazonQAppId, '']]
     ExampleBot: !Equals [!Ref AmazonQAppId, '']
     DeleteBot: !Equals [!Ref ShouldDeleteBot, true]
+    HasUploadBucket: !Not [!Equals [!Ref UploadBucket, '']]
     NeedsVpc:  !And [ !Not [ !Equals [!Ref VpcSubnetId, ''] ], !Not [ !Equals [!Ref VpcSecurityGroupId, ''] ] ] 
 
 Resources:
@@ -388,14 +396,17 @@ Resources:
                   - "qbusiness:ChatSync"
                 Resource: !Sub "arn:aws:qbusiness:${AWS::Region}:${AWS::AccountId}:application/${AmazonQAppId}"
           PolicyName: QBusinessPolicy
-        - PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - "s3:GetObject"
-                Resource: "arn:aws:s3:::*/*"
-          PolicyName: S3ImportBucketPolicy
+        - !If
+          - HasUploadBucket
+          - PolicyName: S3ImportBucketPolicy
+            PolicyDocument:
+              Version: 2012-10-17
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - "s3:GetObject"
+                  Resource: !Sub "arn:${AWS::Partition}:s3:::${UploadBucket}/*"
+          - !Ref AWS::NoValue
         - PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -462,6 +473,7 @@ Resources:
           AWS_DATA_PATH: /opt/model
           AMAZONQ_APP_ID: !Ref AmazonQAppId
           AMAZONQ_ROLE_ARN: !GetAtt QServiceRole.Arn
+          UPLOAD_S3_BUCKET: !Ref UploadBucket
           DYNAMODB_CACHE_TABLE_NAME: !Ref CredentialsTable
           KMS_KEY_ID: !Ref KMSKey
           IDC_CLIENT_ID: !Ref IDCApplicationARN

@@ -11,6 +11,8 @@ import boto3
 AMAZONQ_APP_ID = os.environ.get("AMAZONQ_APP_ID")
 AMAZONQ_REGION = os.environ["AWS_REGION"]
 AMAZONQ_ENDPOINT_URL = os.environ.get("AMAZONQ_ENDPOINT_URL") or f'https://qbusiness.{AMAZONQ_REGION}.api.aws'
+# Only objects in this bucket may be loaded from userFilesUploaded session attributes.
+UPLOAD_S3_BUCKET = os.environ.get("UPLOAD_S3_BUCKET", "")
 print("AMAZONQ_ENDPOINT_URL:", AMAZONQ_ENDPOINT_URL)
 
 def close(intent, sessionAttributes, message):
@@ -58,10 +60,16 @@ def get_amazonq_response(prompt, context, attachments, qbusiness_client):
 
 
 def getS3File(s3Path):
+    if not UPLOAD_S3_BUCKET:
+        raise ValueError("S3 file access is not configured for this deployment")
     if s3Path.startswith("s3://"):
         s3Path = s3Path[5:]
-    s3 = boto3.resource('s3')
     bucket, key = s3Path.split("/", 1)
+    if bucket != UPLOAD_S3_BUCKET:
+        raise ValueError(f"S3 bucket '{bucket}' is not allowed")
+    if not key or key.startswith("/") or ".." in key.split("/"):
+        raise ValueError("Invalid S3 object key")
+    s3 = boto3.resource('s3')
     obj = s3.Object(bucket, key)
     return obj.get()['Body'].read()
 
@@ -74,10 +82,13 @@ def getAttachments(event):
         print(filesJson)
         for userFile in filesJson:
             print(f"getAttachments: userFile={userFile}")
-            attachments.append({
-                "data": getS3File(userFile["s3Path"]),
-                "name": userFile["fileName"]
-            })
+            try:
+                attachments.append({
+                    "data": getS3File(userFile["s3Path"]),
+                    "name": userFile["fileName"]
+                })
+            except (ValueError, KeyError) as e:
+                print(f"Rejected attachment: {e}")
         # delete userFilesUploaded from session
         event["sessionState"]["sessionAttributes"].pop("userFilesUploaded", None)
     return attachments
