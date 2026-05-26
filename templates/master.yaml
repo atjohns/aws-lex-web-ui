@@ -714,6 +714,7 @@ Resources:
                 IDCApplicationARN: !Ref IDCApplicationARN
                 VpcSubnetId: !Ref VpcSubnetId
                 VpcSecurityGroupId: !Ref VpcSecurityGroupId
+                UploadBucket: !Ref UploadBucket
 
     CognitoIdentityPool:
         Type: AWS::CloudFormation::Stack

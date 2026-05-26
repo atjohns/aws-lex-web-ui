@@ -11,6 +11,7 @@ import boto3
 AMAZONQ_APP_ID = os.environ.get("AMAZONQ_APP_ID")
 AMAZONQ_REGION = os.environ["AWS_REGION"]
 AMAZONQ_ENDPOINT_URL = os.environ.get("AMAZONQ_ENDPOINT_URL") or f'https://qbusiness.{AMAZONQ_REGION}.api.aws'
+UPLOAD_BUCKET_NAME = os.environ.get("UPLOAD_BUCKET_NAME", "").strip()
 print("AMAZONQ_ENDPOINT_URL:", AMAZONQ_ENDPOINT_URL)
 
 def close(intent, sessionAttributes, message):
@@ -57,11 +58,31 @@ def get_amazonq_response(prompt, context, attachments, qbusiness_client):
     return resp
 
 
-def getS3File(s3Path):
-    if s3Path.startswith("s3://"):
-        s3Path = s3Path[5:]
+def _parse_allowed_s3_path(s3_path):
+    """Validate client-supplied S3 paths against the configured upload bucket only."""
+    if not UPLOAD_BUCKET_NAME:
+        raise ValueError("UPLOAD_BUCKET_NAME is not configured")
+
+    path = (s3_path or "").strip()
+    if path.startswith("s3://"):
+        path = path[5:]
+
+    if "/" not in path:
+        raise ValueError("invalid S3 path")
+
+    bucket, key = path.split("/", 1)
+    if bucket != UPLOAD_BUCKET_NAME:
+        raise ValueError(f"S3 bucket {bucket!r} is not allowed")
+
+    if not key or key.startswith("/") or ".." in key.split("/"):
+        raise ValueError("invalid S3 object key")
+
+    return bucket, key
+
+
+def getS3File(s3_path):
+    bucket, key = _parse_allowed_s3_path(s3_path)
     s3 = boto3.resource('s3')
-    bucket, key = s3Path.split("/", 1)
     obj = s3.Object(bucket, key)
     return obj.get()['Body'].read()
 
@@ -74,9 +95,14 @@ def getAttachments(event):
         print(filesJson)
         for userFile in filesJson:
             print(f"getAttachments: userFile={userFile}")
+            try:
+                file_data = getS3File(userFile.get("s3Path"))
+            except (ValueError, KeyError) as err:
+                print(f"Rejected attachment path: {err}")
+                continue
             attachments.append({
-                "data": getS3File(userFile["s3Path"]),
-                "name": userFile["fileName"]
+                "data": file_data,
+                "name": userFile.get("fileName", "attachment")
             })
         # delete userFilesUploaded from session
         event["sessionState"]["sessionAttributes"].pop("userFilesUploaded", None)

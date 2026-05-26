@@ -135,10 +135,12 @@ export default {
       lexRuntimeV2Client: payload.v2client,
     });
 
-    context.commit(
-      'setLexSessionAttributes',
-      context.state.config.lex.sessionAttributes,
-    );
+    const initialSessionAttributes = {
+      ...context.state.config.lex.sessionAttributes,
+    };
+    // userFilesUploaded must only be set by the uploadFile action, not URL/config injection
+    delete initialSessionAttributes.userFilesUploaded;
+    context.commit('setLexSessionAttributes', initialSessionAttributes);
     // Initiate WebSocket after lexClient get credential, due to sessionId was assigned from identityId
     lexClient.initCredentials(payload.credentials)
     // Enable streaming response
