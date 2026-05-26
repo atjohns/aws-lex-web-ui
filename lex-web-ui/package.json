@@ -17,7 +17,7 @@
     "build:lib-dev": "cross-env BUILD_TARGET=lib NODE_ENV=development vite build && cross-env BUILD_TARGET=lib NODE_ENV=development node scripts/post-build-css.js",
     "build:lib-prod": "cross-env BUILD_TARGET=lib NODE_ENV=production vite build && cross-env BUILD_TARGET=lib NODE_ENV=production node scripts/post-build-css.js",
     "lint": "eslint src --ext .vue,.js,.jsx,.ts,.tsx",
-    "test:integration": "jest --config test/integration/jest.config.js"
+    "test:integration": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --config test/integration/jest.config.js"
   },
   "dependencies": {
     "amazon-connect-chatjs": "^2.3.0",
