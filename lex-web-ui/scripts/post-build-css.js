@@ -24,10 +24,17 @@ if (process.env.BUILD_TARGET?.trim() !== 'lib') {
   process.exit(0);
 }
 
+const fallbackCssFile = path.join(bundleDir, 'lex-web-ui.css');
+
 // Check if source CSS file exists
 if (!fs.existsSync(sourceCssFile)) {
-  console.error('Source CSS file not found:', sourceCssFile);
-  process.exit(1);
+  if (isProd && fs.existsSync(fallbackCssFile)) {
+    fs.renameSync(fallbackCssFile, sourceCssFile);
+    console.log(`✓ Renamed ${path.basename(fallbackCssFile)} to ${path.basename(sourceCssFile)}`);
+  } else {
+    console.error('Source CSS file not found:', sourceCssFile);
+    process.exit(1);
+  }
 }
 
 /**
