@@ -59,8 +59,8 @@
     "eslint-formatter-friendly": "^7.0.0",
     "eslint-plugin-import": "^2.20.2",
     "express": "^4.17.1",
-    "postcss": "^8.4.32",
-    "vite": "^7.3.1",
+    "postcss": "^8.5.10",
+    "vite": "^7.3.2",
     "vite-plugin-node-polyfills": "^0.24.0"
   },
   "engines": {
