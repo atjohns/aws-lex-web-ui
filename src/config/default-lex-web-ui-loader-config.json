@@ -38,7 +38,7 @@
     "enableLogin": false,
     "enableSFX": false,
     "forceLogin": false,
-    "AllowSuperDangerousHTMLInMessage": true,
+    "AllowSuperDangerousHTMLInMessage": false,
     "shouldDisplayResponseCardTitle": false,
     "minButtonContent": "",
     "hideInputFieldsForButtonResponse": false,

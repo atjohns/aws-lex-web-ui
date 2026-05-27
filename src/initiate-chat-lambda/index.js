@@ -16,16 +16,12 @@ exports.handler = (event, context, callback) => {
 };
 
 async function startChatContact(body) {
-    let contactFlowId = "";
-    if (body.hasOwnProperty('ContactFlowId')) {
-        contactFlowId = body["ContactFlowId"];
+    const contactFlowId = process.env.CONTACT_FLOW_ID;
+    const instanceId = process.env.INSTANCE_ID;
+    if (!contactFlowId || !instanceId) {
+        throw new Error("Connect InstanceId and ContactFlowId must be configured on the Lambda");
     }
     console.log("CF ID: " + contactFlowId);
-
-    let instanceId = "";
-    if (body.hasOwnProperty('InstanceId')) {
-        instanceId = body["InstanceId"];
-    }
     console.log("Instance ID: " + instanceId);
 
     let initialMsgContent = "";
@@ -46,8 +42,8 @@ async function startChatContact(body) {
     }
 
     const startChat = {
-        "InstanceId": instanceId == "" ? process.env.INSTANCE_ID : instanceId,
-        "ContactFlowId": contactFlowId == "" ? process.env.CONTACT_FLOW_ID : contactFlowId,
+        "InstanceId": instanceId,
+        "ContactFlowId": contactFlowId,
         "Attributes": attributes,
         "ChatDurationInMinutes": 60,
         "ParticipantDetails": {
