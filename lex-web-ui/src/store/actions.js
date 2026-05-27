@@ -1463,8 +1463,17 @@ export default {
       credentials: awsCredentials,
       region: context.state.config.region
     });
-    //Create a key that is unique to the user & time of upload
-    const documentKey = lexClient.userId + '/' + file.name.split('.').join('-' + Date.now() + '.')
+    let uploadOwnerPrefix = lexClient.userId;
+    const uploadToken = context.state.tokens.idtokenjwt ||
+      context.state.lex.sessionAttributes.idtokenjwt;
+    if (uploadToken) {
+      const decodedToken = jwtDecode(uploadToken);
+      if (decodedToken && decodedToken.sub) {
+        uploadOwnerPrefix = decodedToken.sub;
+      }
+    }
+    // Create a key that is unique to the authenticated user and upload time.
+    const documentKey = uploadOwnerPrefix + '/' + file.name.split('.').join('-' + Date.now() + '.')
     const s3Params = {
       Body: file,
       Bucket: context.state.config.ui.uploadS3BucketName,

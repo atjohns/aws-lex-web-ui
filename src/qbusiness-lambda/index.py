@@ -6,11 +6,14 @@ import os
 import random
 import string
 import uuid
+from html import escape
+from urllib.parse import urlparse
 import boto3
 
 AMAZONQ_APP_ID = os.environ.get("AMAZONQ_APP_ID")
 AMAZONQ_REGION = os.environ["AWS_REGION"]
 AMAZONQ_ENDPOINT_URL = os.environ.get("AMAZONQ_ENDPOINT_URL") or f'https://qbusiness.{AMAZONQ_REGION}.api.aws'
+UPLOAD_BUCKET = os.environ.get("UPLOAD_BUCKET", "")
 print("AMAZONQ_ENDPOINT_URL:", AMAZONQ_ENDPOINT_URL)
 
 def close(intent, sessionAttributes, message):
@@ -57,30 +60,74 @@ def get_amazonq_response(prompt, context, attachments, qbusiness_client):
     return resp
 
 
-def getS3File(s3Path):
-    if s3Path.startswith("s3://"):
-        s3Path = s3Path[5:]
+def decode_jwt_payload(jwt):
+    payload = jwt.split('.')[1]
+    payload += "=" * (-len(payload) % 4)
+    return json.loads(base64.urlsafe_b64decode(payload).decode())
+
+
+def parseS3Path(s3Path):
+    if not isinstance(s3Path, str):
+        raise ValueError("attachment s3Path must be a string")
+
+    parsed = urlparse(s3Path)
+    if parsed.scheme != "s3" or not parsed.netloc or not parsed.path:
+        raise ValueError("attachment s3Path must be a valid s3://bucket/key URI")
+
+    return parsed.netloc, parsed.path.lstrip("/")
+
+
+def validateS3AttachmentPath(s3Path, userId):
+    if not UPLOAD_BUCKET:
+        raise ValueError("attachment upload bucket is not configured")
+    if not userId or "/" in userId:
+        raise ValueError("invalid authenticated user identifier")
+
+    bucket, key = parseS3Path(s3Path)
+    if bucket != UPLOAD_BUCKET:
+        raise ValueError("attachment bucket is not allowed")
+
+    expectedPrefix = f"{userId}/"
+    if not key.startswith(expectedPrefix) or key == expectedPrefix:
+        raise ValueError("attachment key is not allowed")
+
+    return bucket, key
+
+
+def getS3File(bucket, key):
     s3 = boto3.resource('s3')
-    bucket, key = s3Path.split("/", 1)
     obj = s3.Object(bucket, key)
     return obj.get()['Body'].read()
 
 
-def getAttachments(event):
+def getAttachments(event, userId):
     attachments = []
     userFilesUploaded = event["sessionState"]["sessionAttributes"].get("userFilesUploaded", [])
     if userFilesUploaded:
         filesJson = json.loads(userFilesUploaded)
-        print(filesJson)
         for userFile in filesJson:
-            print(f"getAttachments: userFile={userFile}")
+            bucket, key = validateS3AttachmentPath(userFile.get("s3Path"), userId)
             attachments.append({
-                "data": getS3File(userFile["s3Path"]),
-                "name": userFile["fileName"]
+                "data": getS3File(bucket, key),
+                "name": userFile.get("fileName", "attachment")
             })
         # delete userFilesUploaded from session
         event["sessionState"]["sessionAttributes"].pop("userFilesUploaded", None)
     return attachments
+
+
+def format_source_link(source):
+    title = escape(str(source.get("title", "link (no title)")))
+    url = source.get("url")
+    if not isinstance(url, str):
+        return None
+
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        return None
+
+    safe_url = escape(url, quote=True)
+    return f'<a href="{safe_url}" target="_blank" rel="noopener noreferrer">{title}</a>'
 
 
 def format_response(event, amazonq_response, showSourceLinks):
@@ -91,12 +138,11 @@ def format_response(event, amazonq_response, showSourceLinks):
     if showSourceLinks:
         sourceLinks = []
         for source in amazonq_response.get("sourceAttributions", []):
-            title = source.get("title", "link (no title)")
-            url = source.get("url")
-            if url:
-                sourceLinks.append(f'<a href="{url}">{title}</a>')
+            sourceLink = format_source_link(source)
+            if sourceLink:
+                sourceLinks.append(sourceLink)
         if len(sourceLinks):
-            markdown = f'{markdown}<p><b>Sources</b>: ' + ", ".join(sourceLinks)
+            markdown = f'{markdown}<p><b>Sources</b>: ' + ", ".join(sourceLinks) + '</p>'
 
     # preserve conversation context in session
     messageArray = [{'contentType': 'CustomPayload',  "content": markdown}]
@@ -121,7 +167,7 @@ def get_idc_iam_credentials(jwt):
     )
 
     print(idc_sso_resp)
-    idc_sso_id_token_jwt = json.loads(base64.b64decode(idc_sso_resp['idToken'].split('.')[1] + '==').decode())
+    idc_sso_id_token_jwt = decode_jwt_payload(idc_sso_resp['idToken'])
 
     sts_context = idc_sso_id_token_jwt["sts:identity_context"]
     sts_client = boto3.client('sts')
@@ -153,13 +199,12 @@ def lambda_handler(event, context):
                 "parentMessageId": event["sessionState"]["sessionAttributes"]["parentMessageId"]
             }
             
-        attachments = getAttachments(event)
-    
         # Get the IDC IAM credentials
         # Parse session JWT token to get the jti
         token = (event["sessionState"]["sessionAttributes"]['idtokenjwt'])
-        decoded_token = json.loads(base64.b64decode(token.split('.')[1] + '==').decode())
+        decoded_token = decode_jwt_payload(token)
         jti = decoded_token['jti']
+        userId = decoded_token.get('sub')
     
         dynamo_resource = boto3.resource('dynamodb')
         dynamo_table = dynamo_resource.Table(os.environ.get('DYNAMODB_CACHE_TABLE_NAME'))
@@ -169,8 +214,9 @@ def lambda_handler(event, context):
     
         # Check if JTI exists in caching DB
         response = dynamo_table.get_item(Key={'jti': jti})
+        userFilesUploaded = event["sessionState"]["sessionAttributes"].get("userFilesUploaded", [])
     
-        if 'Item' in response:
+        if 'Item' in response and not userFilesUploaded:
             creds = json.loads((kms_client.decrypt(
                 KeyId=kms_key_id,
                 CiphertextBlob=response['Item']['Credentials'].value))['Plaintext'])
@@ -192,9 +238,11 @@ def lambda_handler(event, context):
         )
     
         qbusiness_client = assumed_session.client("qbusiness")
+        attachments = getAttachments(event, userId)
         amazonq_response = get_amazonq_response(userInput, amazonq_context, attachments, qbusiness_client)
         response = format_response(event, amazonq_response, True)
-    except:
+    except Exception as e:
+        print("Q Business fulfillment error:", e)
         messageArray = [{'contentType': 'PlainText',  "content": "Could not retrieve a Q Business answer. Please ensure you are logged in and have a valid subscription"}]
         sessionState = event.get('sessionState', {})
         sessionAttributes = sessionState.get("sessionAttributes", {})
